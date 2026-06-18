@@ -33,7 +33,7 @@
     "secrets": [
       {
         "name": "DB_PASSWORD",
-        "valueFrom": "arn:aws:secretsmanager:eu-central-1:711387109786:secret:s3-lab/db-password-icAZdx"
+        "valueFrom": "arn:aws:secretsmanager:eu-central-1:711387109786:secret:s3-lab/db-password-icAZdx:password::"
       }
     ],
     "healthCheck": {
