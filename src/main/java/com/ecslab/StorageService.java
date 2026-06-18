@@ -9,4 +9,7 @@ public interface StorageService {
 
     /** Returns the full URL for a previously uploaded key. */
     String getUrl(String key);
+
+    /** Deletes the file and invalidates the CDN cache for the given key. */
+    void delete(String key);
 }
