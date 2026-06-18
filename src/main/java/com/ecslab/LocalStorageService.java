@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -41,6 +42,15 @@ public class LocalStorageService implements StorageService {
     @Override
     public String getUrl(String key) {
         return "http://localhost:8080/uploads/" + key;
+    }
+
+    @Override
+    public void delete(String key) {
+        try {
+            Files.deleteIfExists(UPLOAD_DIR.resolve(key));
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to delete file: " + key, e);
+        }
     }
 
     private String extension(String filename) {
