@@ -23,9 +23,9 @@
       {"name": "SERVER_PORT",            "value": "8080"},
       {"name": "SPRING_PROFILES_ACTIVE", "value": "prod"},
       {"name": "S3_BUCKET",              "value": "s3-lab-images-711387109786"},
-      {"name": "CLOUDFRONT_URL",             "value": "REPLACE_WITH_CloudFrontUrl_OUTPUT"},
-      {"name": "CLOUDFRONT_DISTRIBUTION_ID", "value": "REPLACE_WITH_CloudFrontDistributionId_OUTPUT"},
-      {"name": "DB_HOST",                "value": "REPLACE_WITH_RdsEndpoint_OUTPUT"},
+      {"name": "CLOUDFRONT_URL",             "value": "https://d3g8082h53pxc7.cloudfront.net"},
+      {"name": "CLOUDFRONT_DISTRIBUTION_ID", "value": "E21ARISJ4IFYYF"},
+      {"name": "DB_HOST",                "value": "s3-lab-db.cbe28a8u4arp.eu-central-1.rds.amazonaws.com"},
       {"name": "DB_PORT",                "value": "5432"},
       {"name": "DB_NAME",                "value": "photodb"},
       {"name": "DB_USERNAME",            "value": "photoapp"}
@@ -33,7 +33,7 @@
     "secrets": [
       {
         "name": "DB_PASSWORD",
-        "valueFrom": "REPLACE_WITH_DBSecretArn_OUTPUT"
+        "valueFrom": "arn:aws:secretsmanager:eu-central-1:711387109786:secret:s3-lab/db-password-icAZdx"
       }
     ],
     "healthCheck": {
