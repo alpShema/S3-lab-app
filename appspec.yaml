@@ -3,8 +3,8 @@ Resources:
   - TargetService:
       Type: AWS::ECS::Service
       Properties:
-        TaskDefinition: <TASK_DEFINITION>   # placeholder — CodeDeploy fills this in
+        TaskDefinition: <TASK_DEFINITION>
         LoadBalancerInfo:
-          ContainerName: ecs-lab-container  # must match ContainerDefinitions name in ecs.yaml
+          ContainerName: s3-lab-container
           ContainerPort: 8080
         PlatformVersion: LATEST
