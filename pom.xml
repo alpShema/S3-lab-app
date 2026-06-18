@@ -63,10 +63,16 @@
       <scope>runtime</scope>
     </dependency>
 
-    <!-- AWS SDK S3 — uploads photos to the image bucket -->
+    <!-- AWS SDK S3 — uploads/deletes photos in the image bucket -->
     <dependency>
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>s3</artifactId>
+    </dependency>
+
+    <!-- AWS SDK CloudFront — creates cache invalidations on delete -->
+    <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>cloudfront</artifactId>
     </dependency>
 
     <!-- H2 in-memory database — used by the dev profile so the app runs locally without RDS -->
