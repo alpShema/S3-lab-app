@@ -69,12 +69,6 @@
       <artifactId>s3</artifactId>
     </dependency>
 
-    <!-- AWS SDK CloudFront — creates cache invalidations on delete -->
-    <dependency>
-      <groupId>software.amazon.awssdk</groupId>
-      <artifactId>cloudfront</artifactId>
-    </dependency>
-
     <!-- H2 in-memory database — used by the dev profile so the app runs locally without RDS -->
     <dependency>
       <groupId>com.h2database</groupId>
