@@ -96,7 +96,7 @@ jobs:
           # EventBridge fires on ECR push before this step runs, so the S3
           # artifact would not exist yet — explicit start avoids a race condition.
           echo "Starting CodePipeline"
-          aws codepipeline start-pipeline-execution --name ecs-lab-pipeline
+          aws codepipeline start-pipeline-execution --name s3-lab-pipeline
 
       - name: Summary
         run: |
