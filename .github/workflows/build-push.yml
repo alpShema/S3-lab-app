@@ -1,0 +1,106 @@
+name: Build and Push to ECR
+
+# Runs on every push to main that touches application or deployment files.
+# Skips unrelated changes (docs, README, etc.) using the paths filter.
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - 'Dockerfile'
+      - 'pom.xml'
+      - 'appspec.yaml'
+      - 'taskdef.json'
+      - '.github/workflows/build-push.yml'
+
+# id-token: write is required for GitHub OIDC — exchanges the GitHub JWT for
+# temporary AWS credentials. No long-lived AWS access keys are stored anywhere.
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+
+jobs:
+  build-and-push:
+    name: Build, Push, Upload Artifacts
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Exchange the GitHub OIDC token for temporary AWS credentials.
+      # The role trusts only this repository on the main branch.
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # Outputs the ECR registry URL used to tag and push the image.
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # Build and push with two tags:
+      #   :latest   — always points to the most recent image
+      #   :<git-sha> — immutable reference tied to the exact commit
+      - name: Build and push image to ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          echo "Building image: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+                       -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+
+          echo "Pushing SHA tag: $IMAGE_TAG"
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+          echo "Pushing latest tag"
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "Image push complete"
+
+      # Upload taskdef.json and appspec.yaml individually for traceability,
+      # then bundle them with imageDetail.json into artifacts.zip for CodePipeline.
+      - name: Upload deployment artifacts to S3
+        env:
+          IMAGE_URI: ${{ steps.build-image.outputs.image }}
+          S3_BUCKET: ${{ vars.PIPELINE_ARTIFACT_BUCKET }}
+        run: |
+          # imageDetail.json — tells CodePipeline which image URI to inject into
+          # the <IMAGE1_NAME> placeholder in taskdef.json at deploy time.
+          printf '{"ImageURI": "%s"}' "$IMAGE_URI" > imageDetail.json
+          echo "Generated imageDetail.json for $IMAGE_URI"
+
+          echo "Uploading taskdef.json to S3"
+          aws s3 cp taskdef.json s3://$S3_BUCKET/taskdef.json
+
+          echo "Uploading appspec.yaml to S3"
+          aws s3 cp appspec.yaml s3://$S3_BUCKET/appspec.yaml
+
+          echo "Packaging artifacts.zip"
+          zip artifacts.zip taskdef.json imageDetail.json appspec.yaml
+
+          echo "Uploading artifacts.zip to S3"
+          aws s3 cp artifacts.zip s3://$S3_BUCKET/artifacts.zip
+
+          # Start the pipeline explicitly after all files are uploaded.
+          # EventBridge fires on ECR push before this step runs, so the S3
+          # artifact would not exist yet — explicit start avoids a race condition.
+          echo "Starting CodePipeline"
+          aws codepipeline start-pipeline-execution --name ecs-lab-pipeline
+
+      - name: Summary
+        run: |
+          echo "### Deployment triggered" >> $GITHUB_STEP_SUMMARY
+          echo "**Image URI:** ${{ steps.build-image.outputs.image }}" >> $GITHUB_STEP_SUMMARY
+          echo "**SHA tag:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**latest tag:** updated" >> $GITHUB_STEP_SUMMARY
