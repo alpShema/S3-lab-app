@@ -3,6 +3,7 @@ package com.ecslab;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
@@ -26,6 +27,7 @@ public class PhotoController {
         List<PhotoDto> photos = photoRepository.findAllByOrderByUploadedAtDesc()
                 .stream()
                 .map(p -> new PhotoDto(
+                        p.getId(),
                         storageService.getUrl(p.getS3Key()),
                         p.getDescription(),
                         p.getUploadedAt()))
@@ -47,6 +49,15 @@ public class PhotoController {
         photo.setDescription(description);
         photoRepository.save(photo);
 
+        return "redirect:/";
+    }
+
+    @PostMapping("/photos/{id}/delete")
+    public String delete(@PathVariable Long id) {
+        photoRepository.findById(id).ifPresent(photo -> {
+            storageService.delete(photo.getS3Key());
+            photoRepository.delete(photo);
+        });
         return "redirect:/";
     }
 }
