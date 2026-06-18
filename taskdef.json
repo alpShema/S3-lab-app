@@ -1,20 +1,20 @@
 {
-  "family": "ecs-lab-task",
+  "family": "s3-lab-task",
   "cpu": "512",
   "memory": "1024",
   "networkMode": "awsvpc",
   "requiresCompatibilities": ["FARGATE"],
-  "executionRoleArn": "arn:aws:iam::711387109786:role/ecs-lab-task-execution-role",
-  "taskRoleArn": "arn:aws:iam::711387109786:role/ecs-lab-task-role",
+  "executionRoleArn": "arn:aws:iam::711387109786:role/s3-lab-task-execution-role",
+  "taskRoleArn": "arn:aws:iam::711387109786:role/s3-lab-task-role",
   "containerDefinitions": [{
-    "name": "ecs-lab-container",
+    "name": "s3-lab-container",
     "image": "<IMAGE1_NAME>",
     "portMappings": [{"containerPort": 8080, "protocol": "tcp"}],
     "essential": true,
     "logConfiguration": {
       "logDriver": "awslogs",
       "options": {
-        "awslogs-group": "/ecs/ecs-lab",
+        "awslogs-group": "/ecs/s3-lab",
         "awslogs-region": "eu-central-1",
         "awslogs-stream-prefix": "ecs"
       }
@@ -22,7 +22,7 @@
     "environment": [
       {"name": "SERVER_PORT",            "value": "8080"},
       {"name": "SPRING_PROFILES_ACTIVE", "value": "prod"},
-      {"name": "S3_BUCKET",              "value": "ecs-lab-images-711387109786"},
+      {"name": "S3_BUCKET",              "value": "s3-lab-images-711387109786"},
       {"name": "CLOUDFRONT_URL",         "value": "REPLACE_WITH_CloudFrontUrl_OUTPUT"},
       {"name": "DB_HOST",                "value": "REPLACE_WITH_RdsEndpoint_OUTPUT"},
       {"name": "DB_PORT",                "value": "5432"},
