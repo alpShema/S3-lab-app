@@ -23,6 +23,7 @@ permissions:
 env:
   AWS_REGION: ${{ vars.AWS_REGION }}
   ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+  STACK_NAME: s3-lab-main
 
 jobs:
   build-and-push:
@@ -67,6 +68,51 @@ jobs:
 
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
           echo "Image push complete"
+
+      # Read live values from CloudFormation stack outputs so nothing is hardcoded
+      # in the repo. The placeholders in taskdef.json are substituted here.
+      - name: Resolve stack outputs and prepare taskdef
+        id: stack
+        env:
+          IMAGE_URI: ${{ steps.build-image.outputs.image }}
+        run: |
+          echo "Fetching CloudFormation outputs from $STACK_NAME..."
+
+          get_output() {
+            aws cloudformation describe-stacks \
+              --stack-name "$STACK_NAME" \
+              --query "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue" \
+              --output text
+          }
+
+          EXECUTION_ROLE_ARN=$(get_output TaskExecutionRoleArn)
+          TASK_ROLE_ARN=$(get_output TaskRoleArn)
+          IMAGE_BUCKET=$(get_output ImageBucketName)
+          CLOUDFRONT_URL=$(get_output CloudFrontUrl)
+          CLOUDFRONT_ID=$(get_output CloudFrontDistributionId)
+          RDS_ENDPOINT=$(get_output RdsEndpoint)
+          DB_SECRET_ARN=$(get_output DBSecretArn)
+
+          echo "EXECUTION_ROLE_ARN=$EXECUTION_ROLE_ARN"
+          echo "TASK_ROLE_ARN=$TASK_ROLE_ARN"
+          echo "IMAGE_BUCKET=$IMAGE_BUCKET"
+          echo "CLOUDFRONT_URL=$CLOUDFRONT_URL"
+          echo "CLOUDFRONT_ID=$CLOUDFRONT_ID"
+          echo "RDS_ENDPOINT=$RDS_ENDPOINT"
+
+          # Substitute all placeholders in taskdef.json
+          sed -i \
+            -e "s|<EXECUTION_ROLE_ARN>|$EXECUTION_ROLE_ARN|g" \
+            -e "s|<TASK_ROLE_ARN>|$TASK_ROLE_ARN|g" \
+            -e "s|<IMAGE_BUCKET_NAME>|$IMAGE_BUCKET|g" \
+            -e "s|<CLOUDFRONT_URL>|$CLOUDFRONT_URL|g" \
+            -e "s|<CLOUDFRONT_DISTRIBUTION_ID>|$CLOUDFRONT_ID|g" \
+            -e "s|<RDS_ENDPOINT>|$RDS_ENDPOINT|g" \
+            -e "s|<DB_SECRET_ARN>|$DB_SECRET_ARN|g" \
+            taskdef.json
+
+          echo "taskdef.json after substitution:"
+          cat taskdef.json
 
       # Upload taskdef.json and appspec.yaml individually for traceability,
       # then bundle them with imageDetail.json into artifacts.zip for CodePipeline.
